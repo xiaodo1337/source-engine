@@ -19,8 +19,9 @@ def build(bld):
 		'dmxattribute.cpp',
 		'dmxelement.cpp',
 		'dmxloader.cpp',
-                'dmxloadertext.cpp',
-		'dmxserializationdictionary.cpp'
+        'dmxloadertext.cpp',
+		'dmxserializationdictionary.cpp',
+		'utlsoacontainer_serialization.cpp'
 	]
 
 	includes = [

@@ -22,6 +22,7 @@
 #include "basetypes.h"	// For vec_t, put this somewhere else?
 #include "tier0/dbg.h"
 #include "mathlib/math_pfns.h"
+#include "mathlib/vector.h"
 
 #if defined (__arm__) || defined(__aarch64__)
 #include "sse2neon.h"
@@ -56,7 +57,8 @@ public:
 	Vector4D(const float *pFloat);
 
 	// Initialization
-	void Init(vec_t ix=0.0f, vec_t iy=0.0f, vec_t iz=0.0f, vec_t iw=0.0f);
+	void Init( vec_t ix = 0.0f, vec_t iy = 0.0f, vec_t iz = 0.0f, vec_t iw = 0.0f );
+	void Init( const Vector& src, vec_t iw = 0.0f );
 
 	// Got any nasty NAN's?
 	bool IsValid() const;
@@ -89,7 +91,8 @@ public:
 	Vector4D&	operator*=(const Vector4D &v);			
 	Vector4D&	operator*=(float s);
 	Vector4D&	operator/=(const Vector4D &v);		
-	Vector4D&	operator/=(float s);					
+	Vector4D&	operator/=(float s);
+	Vector4D	operator*(const Vector4D& v) const;
 
 	// negate the Vector4D components
 	void	Negate(); 
@@ -247,6 +250,12 @@ inline void Vector4D::Init( vec_t ix, vec_t iy, vec_t iz, vec_t iw )
 	Assert( IsValid() );
 }
 
+
+inline void Vector4D::Init( const Vector& src, vec_t iw )
+{
+	x = src.x; y = src.y; z = src.z; w = iw;
+	Assert( IsValid() );
+}
 inline void Vector4D::Random( vec_t minVal, vec_t maxVal )
 {
 	x = minVal + ((vec_t)rand() / VALVE_RAND_MAX) * (maxVal - minVal);
@@ -436,6 +445,13 @@ inline Vector4D& Vector4D::operator/=(Vector4D const& v)
 	w /= v.w;
 	Assert( IsValid() );
 	return *this;
+}
+
+inline Vector4D Vector4D::operator*(const Vector4D& v) const
+{
+	Vector4D res;
+	Vector4DMultiply( *this, v, res );
+	return res;
 }
 
 inline void Vector4DAdd( Vector4D const& a, Vector4D const& b, Vector4D& c )

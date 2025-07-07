@@ -25,6 +25,7 @@ def build(bld):
 		'builtin_particle_render_ops.cpp',
 		'particle_sort.cpp',		
 		'particles.cpp',
+		'particle_snapshot.cpp',
 		'psheet.cpp'
 	]
 

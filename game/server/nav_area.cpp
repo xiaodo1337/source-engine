@@ -4712,6 +4712,53 @@ void CNavArea::MarkAsBlocked( int teamID, CBaseEntity *blocker, bool bGenerateEv
 	}
 }
 
+//--------------------------------------------------------------------------------------------------------
+void CNavArea::MarkAsUnblocked( int teamID, bool bGenerateEvent )
+{
+	m_attributeFlags &= ~NAV_MESH_NAV_BLOCKER;
+	m_attributeFlags &= ~NAV_MESH_BLOCKED_PROPDOOR;
+
+	for ( int i = 0; i < MAX_NAV_TEAMS; ++i )
+	{
+		m_isBlocked[i] = false;
+	}
+
+	bool wasBlocked = false;
+	if ( teamID == TEAM_ANY )
+	{
+		for ( int i = 0; i < MAX_NAV_TEAMS; ++i )
+		{
+			m_isBlocked[i] = false;
+		}
+	}
+	else
+	{
+		int teamIdx = teamID % MAX_NAV_TEAMS;
+		wasBlocked |= !!m_isBlocked[teamIdx];
+		m_isBlocked[teamIdx] = false;
+	}
+
+	if ( wasBlocked )
+	{
+		if ( bGenerateEvent )
+		{
+			IGameEvent * event = gameeventmanager->CreateEvent( "nav_blocked" );
+			if ( event )
+			{
+				event->SetInt( "area", m_id );
+				event->SetInt( "blocked", 0 );
+				gameeventmanager->FireEvent( event );
+			}
+		}
+
+		if ( nav_debug_blocked.GetBool() )
+		{
+			ConColorMsg( Color( 0, 128, 255, 255 ), "area %d is unblocked by a nav blocker\n", GetID() );
+		}
+		TheNavMesh->OnAreaUnblocked( this );
+	}
+}
+
 
 //--------------------------------------------------------------------------------------------------------
 // checks if any func_nav_blockers are still blocking the area

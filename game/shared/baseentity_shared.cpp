@@ -1256,6 +1256,10 @@ void CBaseEntity::VPhysicsSetObject( IPhysicsObject *pPhysics )
 		Warning( "Overwriting physics object for %s\n", GetClassname() );
 	}
 	m_pPhysicsObject = pPhysics;
+	if ( m_pPhysicsObject )
+	{
+		m_flNonShadowMass = m_pPhysicsObject->GetMass();
+	}
 	if ( pPhysics && !m_pPhysicsObject )
 	{
 		CollisionRulesChanged();

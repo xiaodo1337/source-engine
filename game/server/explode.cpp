@@ -311,7 +311,7 @@ void CEnvExplosion::InputExplode( inputdata_t &inputdata )
 
 	CPASFilter filter( vecExplodeOrigin );
 	te->Explosion( filter, 0.0,
-		&vecExplodeOrigin, 
+		vecExplodeOrigin, 
 		( m_sFireballSprite < 1 ) ? g_sModelIndexFireball : m_sFireballSprite,
 		!( m_spawnflags & SF_ENVEXPLOSION_NOFIREBALL ) ? ( m_spriteScale / 10.0 ) : 0.0,
 		15,

@@ -144,6 +144,7 @@ public:
 	}
 
 	vec_t	NormalizeInPlace();
+	vec_t	NormalizeInPlaceSafe( const Vector &vFallback );///< Normalize all components
 	Vector	Normalized() const;
 	bool	IsLengthGreaterThan( float val ) const;
 	bool	IsLengthLessThan( float val ) const;
@@ -1511,6 +1512,18 @@ inline bool operator!=( const Vector& v, float const* f )
 	return false;
 }
 
+// return a vector perpendicular to another, with smooth variation. The difference between this and
+// something like VectorVectors is that there are now discontinuities. _unlike_ VectorVectors,
+// you won't get an "u
+void VectorPerpendicularToVector( Vector const &in, Vector *pvecOut );
+
+inline const Vector VectorPerpendicularToVector( const Vector &in )
+{
+	Vector out;
+	VectorPerpendicularToVector( in, &out );
+	return out;
+}
+
 
 //-----------------------------------------------------------------------------
 // AngularImpulse
@@ -2282,7 +2295,6 @@ FORCEINLINE void VectorNormalizeFast( Vector &vec )
 
 #endif // _X360
 
-
 inline vec_t Vector::NormalizeInPlace()
 {
 	return VectorNormalize( *this );
@@ -2303,6 +2315,16 @@ inline bool Vector::IsLengthGreaterThan( float val ) const
 inline bool Vector::IsLengthLessThan( float val ) const
 {
 	return LengthSqr() < val*val;
+}
+
+inline vec_t Vector::NormalizeInPlaceSafe( const Vector &vFallback )
+{
+	float flLength = VectorNormalize( *this );
+	if ( flLength == 0.0f )
+	{
+		*this = vFallback;
+	}
+	return flLength;
 }
 
 #endif

@@ -658,7 +658,7 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 	InitializeCvars();
 	
 	// Initialize the particle system
-	if ( !g_pParticleSystemMgr->Init( g_pParticleSystemQuery ) )
+	if ( !g_pParticleSystemMgr->Init( g_pParticleSystemQuery, (IsPC() || IsAndroid()) ) )
 	{
 		return false;
 	}
@@ -727,7 +727,7 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 	InvalidateQueryCache();
 
 	// Parse the particle manifest file & register the effects within it
-	ParseParticleEffects( false, false );
+	ParseParticleEffects( false );
 
 	// try to get debug overlay, may be NULL if on HLDS
 	debugoverlay = (IVDebugOverlay *)appSystemFactory( VDEBUG_OVERLAY_INTERFACE_VERSION, NULL );
@@ -959,9 +959,6 @@ bool CServerGameDLL::LevelInit( const char *pMapName, char const *pMapEntities, 
 		// Single player games tell xbox live what game & chapter the user is playing
 		UpdateRichPresence();
 	}
-
-	//Tony; parse custom manifest if exists!
-	ParseParticleEffectsMap( pMapName, false );
 
 	// IGameSystem::LevelInitPreEntityAllSystems() is called when the world is precached
 	// That happens either in LoadGameState() or in MapEntity_ParseAllEntities()
@@ -2337,6 +2334,25 @@ int GetParticleSystemIndex( const char *pParticleSystemName )
 			return nIndex;
 
 		DevWarning("Server: Missing precache for particle system \"%s\"!\n", pParticleSystemName );
+	}
+
+	// This is the invalid string index
+	return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// Converts a previously precached effect into an index
+//-----------------------------------------------------------------------------
+int GetEffectIndex( const char *pEffectName )
+{
+	if ( pEffectName )
+	{
+		int nIndex = g_pStringTableEffectDispatch->FindStringIndex( pEffectName );
+		if (nIndex != INVALID_STRING_INDEX )
+			return nIndex;
+
+		DevWarning("Server: Missing precache for effect \"%s\"!\n", pEffectName );
 	}
 
 	// This is the invalid string index

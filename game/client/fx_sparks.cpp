@@ -644,7 +644,6 @@ void FX_MetalSpark( const Vector &position, const Vector &direction, const Vecto
 	sparkEmitter->GetBinding().SetBBox( offset - Vector( 32, 32, 32 ), offset + Vector( 32, 32, 32 ) );
 
 	int	numSparks = random->RandomInt( 4, 8 ) * ( iScale * 2 );
-	numSparks = (int)( 0.5f + (float)numSparks * g_pParticleSystemMgr->ParticleThrottleScaling() );
 	
 	if ( g_Material_Spark == NULL )
 	{

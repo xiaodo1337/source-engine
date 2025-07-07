@@ -371,7 +371,9 @@ void DrawSegs( int noise_divisions, float *prgNoise, const model_t* spritemodel,
 			brightness = 1;
 		}
 
-		VectorScale( *((Vector*)color), brightness, curSeg.m_vColor );
+		Vector vTemp;
+		VectorScale( *((Vector*)color), brightness, vTemp );
+		curSeg.SetColor(vTemp, 1.0f);
 
 		// UNDONE: Make this a spline instead of just a line?
 		VectorMA( source, fraction, delta, curSeg.m_vPos );
@@ -578,7 +580,9 @@ void DrawTeslaSegs( int noise_divisions, float *prgNoise, const model_t* spritem
 			brightness = 1;
 		}
 
-		VectorScale( *((Vector*)color), brightness, curSeg.m_vColor );
+		Vector vTemp;
+		VectorScale( *((Vector*)color), brightness, vTemp );
+		curSeg.SetColor(vTemp, 1.0f);
 
 		CalcSegOrigin( &curSeg.m_vPos, i, noise_divisions, prgNoise, source, delta, perp, segments, freq, scale, fraction, flags );
 
@@ -801,7 +805,7 @@ void DrawSplineSegs( int noise_divisions, float *prgNoise,
 		seg.m_flAlpha = 1;
 
 		VectorScale( color, brightness, scaledColor );
-		seg.m_vColor.Init( scaledColor[0], scaledColor[1], scaledColor[2] );
+		seg.SetColor(*(const Vector*)(scaledColor), 1.0f);
 		
 
 		// -------------------------------------------------
@@ -1513,11 +1517,11 @@ void DrawBeamQuadratic( const Vector &start, const Vector &control, const Vector
 		if ( i == 0 || i == subdivisions )
 		{
 			// HACK: fade out the ends a bit
-			seg.m_vColor = vec3_origin;
+			seg.SetColor(vec3_origin, 1.0f);
 		}
 		else
 		{
-			seg.m_vColor = color;
+			seg.SetColor(color, 1.0f);
 		}
 		beamDraw.NextSeg( &seg );
 	}

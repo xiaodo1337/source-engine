@@ -12,6 +12,7 @@
 #include "IEffects.h"
 #include "toolframework_client.h"
 #include "cdll_client_int.h"
+#include "c_te_effect_dispatch.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -72,8 +73,8 @@ void TE_DynamicLight( IRecipientFilter& filter, float delay,
 	const Vector* org, int r, int g, int b, int exponent, float radius, float time, float decay, int nLightIndex = LIGHT_INDEX_TE_DYNAMIC );
 void TE_DynamicLight( IRecipientFilter& filter, float delay, KeyValues *pKeyValues );
 void TE_Explosion( IRecipientFilter& filter, float delay,
-	const Vector* pos, int modelindex, float scale, int framerate, int flags, int radius, int magnitude, 
-	const Vector* normal = NULL, unsigned char materialType = 'C', bool bShouldAffectRagdolls = true );
+	const Vector& pos, int modelindex, float scale, int framerate, int flags, int radius, int magnitude, 
+	const Vector& normal, unsigned char materialType = 'C', bool bShouldAffectRagdolls = true );
 void TE_Explosion( IRecipientFilter& filter, float delay, KeyValues *pKeyValues );
 void TE_ShatterSurface( IRecipientFilter& filter, float delay,
 	const Vector* pos, const QAngle* angle, const Vector* vForce, const Vector* vForcePos, 
@@ -118,11 +119,8 @@ void TE_Dust( IRecipientFilter& filter, float delay,
 			 const Vector &pos, const Vector &dir, float size, float speed );
 void TE_GaussExplosion( IRecipientFilter& filter, float delayt,
 			 const Vector &pos, const Vector &dir, int type );
-void TE_DispatchEffect( IRecipientFilter& filter, float delay, 
-			 const Vector &pos, const char *pName, const CEffectData &data );
-void TE_DispatchEffect( IRecipientFilter& filter, float delay, KeyValues *pKeyValues );
 void TE_PhysicsProp( IRecipientFilter& filter, float delay,
-	int modelindex, int skin, const Vector& pos, const QAngle &angles, const Vector& vel, bool breakmodel, int effects );
+	int modelindex, int skin, const Vector& pos, const QAngle &angles, const Vector& vel, int flags, int effects, color24 renderColor );
 void TE_PhysicsProp( IRecipientFilter& filter, float delay, KeyValues *pKeyValues );
 void TE_ConcussiveExplosion( IRecipientFilter& filter, float delay, KeyValues *pKeyValues );
 void TE_ClientProjectile( IRecipientFilter& filter, float delay,
@@ -333,10 +331,11 @@ public:
 		}
 	}
 	virtual void Explosion( IRecipientFilter& filter, float delay,
-		const Vector* pos, int modelindex, float scale, int framerate, int flags, int radius, int magnitude, const Vector* normal = NULL, unsigned char materialType = 'C' )
+		const Vector& pos, int modelindex, float scale, int framerate, int flags, int radius, int magnitude, const Vector* pNormal = NULL, unsigned char materialType = 'C' )
 	{
 		if ( !SuppressTE( filter ) )
 		{
+			Vector normal = pNormal ? *pNormal : Vector( 0, 0, 1 );
 			TE_Explosion( filter, delay, pos, modelindex, scale, framerate, flags, radius, magnitude, 
 				normal, materialType );
 		}
@@ -500,20 +499,12 @@ public:
 			TE_GaussExplosion( filter, delay, pos, dir, type );
 		}
 	}
-	virtual void DispatchEffect( IRecipientFilter& filter, float delay,
-				const Vector &pos, const char *pName, const CEffectData &data )
-	{
-		if ( !SuppressTE( filter ) )
-		{
-			TE_DispatchEffect( filter, delay, pos, pName, data );
-		}
-	}
 	virtual void PhysicsProp( IRecipientFilter& filter, float delay, int modelindex, int skin,
-		const Vector& pos, const QAngle &angles, const Vector& vel, int flags, int effects )
+		const Vector& pos, const QAngle &angles, const Vector& vel, int flags, int effects, color24 renderColor )
 	{
 		if ( !SuppressTE( filter ) )
 		{
-			TE_PhysicsProp( filter, delay, modelindex, skin, pos, angles, vel, flags, effects );
+			TE_PhysicsProp( filter, delay, modelindex, skin, pos, angles, vel, flags, effects, renderColor );
 		}
 	}
 	virtual void ClientProjectile( IRecipientFilter& filter, float delay,
@@ -549,7 +540,7 @@ public:
 			break;
 
 		case TE_DISPATCH_EFFECT:
-			TE_DispatchEffect( filter, 0.0f, pKeyValues );
+			DispatchEffect( filter, 0.0f, pKeyValues );
 			break;
 
 		case TE_MUZZLE_FLASH:

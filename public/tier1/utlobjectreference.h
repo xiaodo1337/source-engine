@@ -46,6 +46,16 @@ public:
 		AddRef( pObj );
 	}
 
+	FORCEINLINE CUtlReference( const CUtlReference<T>& other ) 
+	{
+		CUtlReference();
+
+		if ( other.IsValid() )
+		{
+			AddRef( (T*)( other.GetObject() ) );
+		}
+	}
+
 	FORCEINLINE ~CUtlReference(void)
 	{
 		KillRef();
@@ -65,12 +75,28 @@ public:
 		return m_pObject;
 	}
 
+	FORCEINLINE bool IsValid( void ) const
+	{
+		return ( m_pObject != NULL );
+	}
+
 	FORCEINLINE operator T*()
 	{
 		return m_pObject;
 	}
 
 	FORCEINLINE operator const T*() const
+	{
+		return m_pObject;
+	}
+
+
+	FORCEINLINE T * GetObject( void )
+	{
+		return m_pObject;
+	}
+
+	FORCEINLINE const T* GetObject( void ) const
 	{
 		return m_pObject;
 	}
@@ -98,10 +124,20 @@ public:
 	}
 
 
+	FORCEINLINE bool operator==( T const *pOther ) const
+	{
+		return ( pOther == m_pObject );
+	}
+
+	FORCEINLINE bool operator==( T *pOther ) const
+	{
+		return ( pOther == m_pObject );
+	}
+
 	FORCEINLINE bool operator==( const CUtlReference& o ) const
 	{
 		return ( o.m_pObject == m_pObject );
-	}	
+	}
 
 public:
 	CUtlReference *m_pNext;

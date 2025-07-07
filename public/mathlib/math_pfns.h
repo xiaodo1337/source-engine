@@ -13,6 +13,19 @@
 
 #if !defined( _X360 )
 
+enum MatrixAxisType_t
+{
+	FORWARD_AXIS = 0,
+	LEFT_AXIS = 1,
+	UP_AXIS = 2,
+
+	X_AXIS = 0,
+	Y_AXIS = 1,
+	Z_AXIS = 2,
+	ORIGIN = 3,
+	PROJECTIVE = 3,
+};
+
 // These globals are initialized by mathlib and redirected based on available fpu features
 extern float (*pfSqrt)(float x);
 extern float (*pfRSqrt)(float x);

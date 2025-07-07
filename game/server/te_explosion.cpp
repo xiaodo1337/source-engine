@@ -111,9 +111,9 @@ END_SEND_TABLE()
 static CTEExplosion g_TEExplosion( "Explosion" );
 
 void TE_Explosion( IRecipientFilter& filter, float delay,
-	const Vector* pos, int modelindex, float scale, int framerate, int flags, int radius, int magnitude, const Vector* normal, unsigned char materialType )
+	const Vector& pos, int modelindex, float scale, int framerate, int flags, int radius, int magnitude, const Vector& normal, unsigned char materialType )
 {
-	g_TEExplosion.m_vecOrigin		= *pos;
+	g_TEExplosion.m_vecOrigin		= pos;
 	g_TEExplosion.m_nModelIndex		= modelindex;	
 	g_TEExplosion.m_fScale			= scale;
 	g_TEExplosion.m_nFrameRate		= framerate;
@@ -121,10 +121,9 @@ void TE_Explosion( IRecipientFilter& filter, float delay,
 	g_TEExplosion.m_nRadius			= radius;
 	g_TEExplosion.m_nMagnitude		= magnitude;
 
-	if ( normal )
-		g_TEExplosion.m_vecNormal	= *normal;
-	else 
-		g_TEExplosion.m_vecNormal	= Vector(0,0,1);
+	// Make a copy here so we can re-use it below
+	g_TEExplosion.m_vecNormal		= normal; // pNormal ? ( *pNormal ) : Vector( 0, 0, 1 );
+
 	g_TEExplosion.m_chMaterialType	= materialType;
 
 	// Send it over the wire

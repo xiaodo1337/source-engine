@@ -55,6 +55,7 @@ def build(bld):
 		'utlbinaryblock.cpp',
 		'utlbuffer.cpp',
 		'utlbufferutil.cpp',
+		'utlsoacontainer.cpp',
 		'utlstring.cpp',
 		'utlsymbol.cpp'
 	]

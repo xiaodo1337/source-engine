@@ -215,6 +215,18 @@ inline void IncrementFloatPointer( float* &pBufferPointer, int vertexSize )
 	pBufferPointer = reinterpret_cast<float*>( reinterpret_cast<unsigned char*>( pBufferPointer ) + vertexSize );
 }
 
+inline int PackRGBToPlatformColor( int r, int g, int b, int a )
+{
+	#ifdef OPENGL_SWAP_COLORS
+		int col = r | (g << 8) | (b << 16) | (a << 24);	// r, g, b, a in memory
+	#elif defined( CELL_GCM_SWAP_COLORS )
+		int col = ( r << 24 ) | ( g << 16 ) | ( b << 8 ) | a;
+	#else
+		int col = b | (g << 8) | (r << 16) | (a << 24);
+	#endif
+	return col;
+}
+
 
 //-----------------------------------------------------------------------------
 // Used in lists of indexed primitives.
@@ -450,6 +462,7 @@ public:
 	void AdvanceVertex( void );
 	template<int nFlags, int nNumTexCoords> void AdvanceVertexF( void );
 	void AdvanceVertices( int nVerts );
+	template<int nFlags, int nNumTexCoords> void AdvanceVerticesF( int nVerts );
 
 	int GetCurrentVertex() const;
 	int GetFirstVertex() const;
@@ -480,6 +493,8 @@ public:
 
 	// position setting
 	void Position3f( float x, float y, float z );
+	void Position3f( int nVertexOffset, float x, float y, float z );
+	void Position3f( const fltx4 &fl4Position );
 	void Position3fv( const float *v );
 
 	// normal setting
@@ -501,6 +516,7 @@ public:
 	void Color3ub( unsigned char r, unsigned char g, unsigned char b );
 	void Color3ubv( unsigned char const* rgb );
 	void Color4ub( unsigned char r, unsigned char g, unsigned char b, unsigned char a );
+	void Color4ub( int nVertexOffset, unsigned char r, unsigned char g, unsigned char b, unsigned char a );
 	void Color4ubv( unsigned char const* rgba );
 
 	// specular color setting
@@ -523,6 +539,7 @@ public:
 	void TexCoord3fv( int stage, const float *stu );
 	void TexCoord4f( int stage, float s, float t, float u, float w );
 	void TexCoord4fv( int stage, const float *stuv );
+	void TexCoord4fv( int nVertexOffset, int stage, const float *stuv );
 
 	void TexCoordSubRect2f( int stage, float s, float t, float offsetS, float offsetT, float scaleS, float scaleT );
 	void TexCoordSubRect2fv( int stage, const float *st, const float *offset, const float *scale );
@@ -1105,7 +1122,9 @@ inline void CVertexBuilder::AdvanceVertex()
 }
 
 
-inline void CVertexBuilder::AdvanceVertices( int nVerts )
+
+template<int nFlags, int nNumTexCoords>
+FORCEINLINE void CVertexBuilder::AdvanceVerticesF( int nVerts )
 {
 	m_nCurrentVertex += nVerts;
 	if ( m_nCurrentVertex > m_nVertexCount )
@@ -1113,19 +1132,30 @@ inline void CVertexBuilder::AdvanceVertices( int nVerts )
 		m_nVertexCount = m_nCurrentVertex;
 	}
 
-	IncrementFloatPointer( m_pCurrPosition, m_VertexSize_Position*nVerts );
-	IncrementFloatPointer( m_pCurrNormal, m_VertexSize_Normal*nVerts );
+	if ( nFlags & VTX_HAVEPOS )
+		IncrementFloatPointer( m_pCurrPosition, m_VertexSize_Position*nVerts );
+	if ( nFlags & VTX_HAVENORMAL )
+		IncrementFloatPointer( m_pCurrNormal, m_VertexSize_Normal*nVerts );
+	if ( nFlags & VTX_HAVECOLOR )
+		m_pCurrColor += m_VertexSize_Color*nVerts;
 
 	COMPILE_TIME_ASSERT( VERTEX_MAX_TEXTURE_COORDINATES == 8 );
-	IncrementFloatPointer( m_pCurrTexCoord[0], m_VertexSize_TexCoord[0]*nVerts );
-	IncrementFloatPointer( m_pCurrTexCoord[1], m_VertexSize_TexCoord[1]*nVerts );
-	IncrementFloatPointer( m_pCurrTexCoord[2], m_VertexSize_TexCoord[2]*nVerts );
-	IncrementFloatPointer( m_pCurrTexCoord[3], m_VertexSize_TexCoord[3]*nVerts );
-	IncrementFloatPointer( m_pCurrTexCoord[4], m_VertexSize_TexCoord[4]*nVerts );
-	IncrementFloatPointer( m_pCurrTexCoord[5], m_VertexSize_TexCoord[5]*nVerts );
-	IncrementFloatPointer( m_pCurrTexCoord[6], m_VertexSize_TexCoord[6]*nVerts );
-	IncrementFloatPointer( m_pCurrTexCoord[7], m_VertexSize_TexCoord[7]*nVerts );
-	m_pCurrColor += m_VertexSize_Color*nVerts;
+	if ( nNumTexCoords > 0 )
+		IncrementFloatPointer( m_pCurrTexCoord[0], m_VertexSize_TexCoord[0]*nVerts );
+	if ( nNumTexCoords > 1 )
+		IncrementFloatPointer( m_pCurrTexCoord[1], m_VertexSize_TexCoord[1]*nVerts );
+	if ( nNumTexCoords > 2 )
+		IncrementFloatPointer( m_pCurrTexCoord[2], m_VertexSize_TexCoord[2]*nVerts );
+	if ( nNumTexCoords > 3 )
+		IncrementFloatPointer( m_pCurrTexCoord[3], m_VertexSize_TexCoord[3]*nVerts );
+	if ( nNumTexCoords > 4 )
+		IncrementFloatPointer( m_pCurrTexCoord[4], m_VertexSize_TexCoord[4]*nVerts );
+	if ( nNumTexCoords > 5 )
+		IncrementFloatPointer( m_pCurrTexCoord[5], m_VertexSize_TexCoord[5]*nVerts );
+	if ( nNumTexCoords > 6 )
+		IncrementFloatPointer( m_pCurrTexCoord[6], m_VertexSize_TexCoord[6]*nVerts );
+	if ( nNumTexCoords > 7 )
+		IncrementFloatPointer( m_pCurrTexCoord[7], m_VertexSize_TexCoord[7]*nVerts );
 
 #if ( defined( _DEBUG ) && ( COMPRESSED_NORMALS_TYPE == COMPRESSED_NORMALS_COMBINEDTANGENTS_UBYTE4 ) )
 	m_bWrittenNormal   = false;
@@ -1133,6 +1163,10 @@ inline void CVertexBuilder::AdvanceVertices( int nVerts )
 #endif
 }
 
+inline void CVertexBuilder::AdvanceVertices( int nVerts )
+{
+	AdvanceVerticesF<VTX_HAVEALL, 8>( nVerts );
+}
 
 //-----------------------------------------------------------------------------
 // For use with the FastVertex methods, advances the current vertex by N
@@ -1702,7 +1736,20 @@ inline void	CVertexBuilder::Position3f( float x, float y, float z )
 	*pDst++ = y;
 	*pDst = z;
 }
-
+inline void CVertexBuilder::Position3f( int nVertexOffset, float x, float y, float z )
+{
+	Assert( m_pPosition && m_pCurrPosition );
+	Assert( IsFinite(x) && IsFinite(y) && IsFinite(z) );
+	float *pDst = OffsetFloatPointer( m_pCurrPosition, nVertexOffset, m_VertexSize_Position );
+	*pDst++ = x;
+	*pDst++ = y;
+	*pDst = z;
+}
+inline void	CVertexBuilder::Position3f( const fltx4 &fl4Position )
+{
+	Assert( m_pPosition && m_pCurrPosition );
+	StoreUnaligned3SIMD( m_pCurrPosition, fl4Position );
+}
 inline void	CVertexBuilder::Position3fv( const float *v )
 {
 	Assert(v);
@@ -1837,7 +1884,17 @@ inline void	CVertexBuilder::Color3f( float r, float g, float b )
 #endif
 	*(int*)m_pCurrColor = col;
 }
-
+inline void CVertexBuilder::Color4ub( int nVertexOffset, unsigned char r, unsigned char g, unsigned char b, unsigned char a )
+{
+	Assert( m_pColor && m_pCurrColor );
+	#ifdef OPENGL_SWAP_COLORS
+		int col = r | (g << 8) | (b << 16) | (a << 24);	// r, g, b, a in memory
+	#else
+		int col = b | (g << 8) | (r << 16) | (a << 24);
+	#endif
+	
+	*(int*)( m_pCurrColor + nVertexOffset * m_VertexSize_Color ) = col;
+}
 inline void	CVertexBuilder::Color3fv( const float *rgb )
 {
 	Assert(rgb);
@@ -2139,6 +2196,18 @@ inline void	CVertexBuilder::TexCoord4fv( int stage, const float *stuv )
 	Assert( IsFinite(stuv[0]) && IsFinite(stuv[1]) && IsFinite(stuv[2]) );
 
 	float *pDst = m_pCurrTexCoord[stage];
+	*pDst++ = *stuv++;
+	*pDst++ = *stuv++;
+	*pDst++ = *stuv++;
+	*pDst = *stuv;
+}
+
+inline void CVertexBuilder::TexCoord4fv( int nVertexOffset, int stage, const float *stuv )
+{
+	Assert(stuv);
+	Assert( m_pTexCoord[stage] && m_pCurrTexCoord[stage] );
+	Assert( IsFinite(stuv[0]) && IsFinite(stuv[1]) && IsFinite(stuv[2]) );
+	float *pDst = OffsetFloatPointer( m_pCurrTexCoord[stage], nVertexOffset, m_VertexSize_TexCoord[stage] );
 	*pDst++ = *stuv++;
 	*pDst++ = *stuv++;
 	*pDst++ = *stuv++;
@@ -2473,7 +2542,9 @@ public:
 	void AdvanceIndices( int nIndexCount );
 
 	int GetCurrentIndex();
+	int GetIndexOffset() const;
 	int GetFirstIndex() const;
+	unsigned short *BaseIndexData() const;
 
 	unsigned short const* Index() const;
 
@@ -2482,10 +2553,12 @@ public:
 
 	// Fast Index! No need to call advance index, and no random access allowed
 	void FastIndex( unsigned short nIndex );
+	void FastIndex( int nIndexOffset, unsigned short nIndex );
 
 	// NOTE: This version is the one you really want to achieve write-combining;
 	// Write combining only works if you write in 4 bytes chunks.
 	void FastIndex2( unsigned short nIndex1, unsigned short nIndex2 );
+	void FastIndex2( int nIndexOffset, unsigned short nIndex1, unsigned short nIndex2 );
 
 	// Generates indices for a particular primitive type
 	void GenerateIndices( MaterialPrimitiveType_t primitiveType, int nIndexCount );
@@ -2498,6 +2571,7 @@ public:
 
 	void FastTriangle( int startVert );
 	void FastQuad( int startVert );
+	void FastQuad( int nIndexOffset, int startVert );
 	void FastPolygon( int startVert, int numTriangles );
 	void FastPolygonList( int startVert, int *pVertexCount, int polygonCount );
 	void FastIndexList( const unsigned short *pIndexList, int startVert, int indexCount );
@@ -2665,6 +2739,11 @@ inline int CIndexBuilder::Offset() const
 inline int CIndexBuilder::GetFirstIndex() const
 {
 	return m_nBufferFirstIndex;
+}
+
+inline unsigned short *CIndexBuilder::BaseIndexData() const
+{
+	return m_pIndices;
 }
 
 
@@ -2875,6 +2954,11 @@ inline int CIndexBuilder::GetCurrentIndex()
 	return m_nCurrentIndex;
 }
 
+inline int CIndexBuilder::GetIndexOffset() const
+{
+	return m_nIndexOffset;
+}
+
 inline unsigned short const* CIndexBuilder::Index() const
 {
 	Assert( m_nCurrentIndex < m_nMaxIndexCount );
@@ -2908,6 +2992,12 @@ inline void CIndexBuilder::FastIndex( unsigned short nIndex )
 	m_nIndexCount = m_nCurrentIndex;	
 }
 
+inline void CIndexBuilder::FastIndex( int nIndexOffset, unsigned short nIndex )
+{
+	Assert( m_pIndices );
+	Assert( nIndexOffset < m_nMaxIndexCount );
+	m_pIndices[m_nCurrentIndex + nIndexOffset] = (unsigned short)( m_nIndexOffset + nIndex );
+}
 inline void CIndexBuilder::FastTriangle( int startVert )
 {
 	startVert += m_nIndexOffset;
@@ -2996,6 +3086,16 @@ inline void CIndexBuilder::FastIndexList( const unsigned short *pIndexList, int 
 		pIndexOut[i] = startVert + pIndexList[i];
 	}
 	AdvanceIndices(indexCount);
+}
+
+
+FORCEINLINE unsigned int TwoIndices( unsigned int nIndex1, unsigned int nIndex2 )
+{
+#ifdef VALVE_LITTLE_ENDIAN
+	return ( (unsigned int)nIndex1 ) | ( ( (unsigned int)nIndex2 ) << 16 );
+#else
+	return ( (unsigned int)nIndex2 ) | ( ( (unsigned int)nIndex1 ) << 16 );
+#endif
 }
 
 
@@ -3129,6 +3229,9 @@ public:
 	// Returns the base vertex memory pointer
 	void* BaseVertexData();
 
+	// Returns the base index memory pointer
+	unsigned short* BaseIndexData();
+
 	// Selects the nth Vertex and Index 
 	void SelectVertex( int idx );
 	void SelectIndex( int idx );
@@ -3140,11 +3243,13 @@ public:
 	void AdvanceVertex();
 	template<int nFlags, int nNumTexCoords> void AdvanceVertexF();
 	void AdvanceVertices( int nVerts );
+	template<int nFlags, int nNumTexCoords> void AdvanceVerticesF( int nVerts );
 	void AdvanceIndex();
 	void AdvanceIndices( int nIndices );
 
 	int GetCurrentVertex();
 	int GetCurrentIndex();
+	int GetIndexOffset();
 
 	// Data retrieval...
 	const float *Position() const;
@@ -3173,6 +3278,8 @@ public:
 
 	// position setting
 	void Position3f( float x, float y, float z );
+	void Position3f( int nVertexOffset, float x, float y, float z );
+	void Position3f( const fltx4 &f4Position );
 	void Position3fv( const float *v );
 
 	// normal setting
@@ -3195,6 +3302,7 @@ public:
 	void Color3ub( unsigned char r, unsigned char g, unsigned char b );
 	void Color3ubv( unsigned char const* rgb );
 	void Color4ub( unsigned char r, unsigned char g, unsigned char b, unsigned char a );
+	void Color4ub( int nVertexoffset, unsigned char r, unsigned char g, unsigned char b, unsigned char a );
 	void Color4ubv( unsigned char const* rgba );
 
 	// specular color setting
@@ -3217,6 +3325,7 @@ public:
 	void TexCoord3fv( int stage, const float *stu );
 	void TexCoord4f( int stage, float s, float t, float u, float w );
 	void TexCoord4fv( int stage, const float *stuv );
+	void TexCoord4fv( int nVertexOffset, int stage, const float *stuv );
 
 	void TexCoordSubRect2f( int stage, float s, float t, float offsetS, float offsetT, float scaleS, float scaleT );
 	void TexCoordSubRect2fv( int stage, const float *st, const float *offset, const float *scale );
@@ -3250,9 +3359,14 @@ public:
 	// NOTE: Use this one to get write combining! Much faster than the other version of FastIndex
 	// Fast Index! No need to call advance index, and no random access allowed
 	void FastIndex2( unsigned short nIndex1, unsigned short nIndex2 );
+	void FastIndex2( int nIndexOffset, unsigned short nIndex1, unsigned short nIndex2 );
 
 	// Fast Index! No need to call advance index, and no random access allowed
 	void FastIndex( unsigned short index );
+	void FastQuad( int index );
+
+	void FastIndex( int nIndexOffset, unsigned short index );
+	void FastQuad( int nIndexOffset, int index );
 
 	// Fast Vertex! No need to call advance vertex, and no random access allowed. 
 	// WARNING - these are low level functions that are intended only for use
@@ -3276,6 +3390,17 @@ public:
 #if defined( _X360 )
 	void VertexDX8ToX360( const ModelVertexDX8_t &vertex );
 #endif
+
+	// this low level function gets you a pointer to the vertex output data. It is dangerous - any
+	// caller using it must understand the vertex layout that it is building. It is for optimized
+	// meshbuilding loops like particle drawing that use special shaders. After writing to the output
+	// data, you shuodl call FastAdvanceNVertices
+	FORCEINLINE void *GetVertexDataPtr( int nWhatSizeIThinkItIs )
+	{
+		if ( m_VertexBuilder.m_VertexSize_Position != nWhatSizeIThinkItIs )
+			return NULL;
+		return m_VertexBuilder.m_pCurrPosition;
+	}
 
 private:
 	// Computes number of verts and indices 
@@ -3640,6 +3765,12 @@ FORCEINLINE void CMeshBuilder::AdvanceVertex()
 	m_VertexBuilder.AdvanceVertex();
 }
 
+
+template <int nFlags, int nNumCoords> FORCEINLINE void CMeshBuilder::AdvanceVerticesF( int nVertexCount )
+{
+	m_VertexBuilder.AdvanceVerticesF<nFlags, nNumCoords>( nVertexCount );
+}
+
 FORCEINLINE void CMeshBuilder::AdvanceVertices( int nVertexCount )
 {
 	m_VertexBuilder.AdvanceVertices( nVertexCount );
@@ -3663,6 +3794,11 @@ FORCEINLINE int CMeshBuilder::GetCurrentVertex()
 FORCEINLINE int CMeshBuilder::GetCurrentIndex()
 {
 	return m_IndexBuilder.GetCurrentIndex();
+}
+
+FORCEINLINE int CMeshBuilder::GetIndexOffset()
+{
+	return m_IndexBuilder.GetIndexOffset();
 }
 
 
@@ -3737,6 +3873,15 @@ FORCEINLINE int CMeshBuilder::IndexCount() const
 FORCEINLINE void* CMeshBuilder::BaseVertexData()
 {
 	return m_VertexBuilder.BaseVertexData();
+}
+
+
+//-----------------------------------------------------------------------------
+// Returns the base index memory pointer
+//-----------------------------------------------------------------------------
+FORCEINLINE unsigned short* CMeshBuilder::BaseIndexData()
+{
+	return m_IndexBuilder.BaseIndexData();
 }
 
 //-----------------------------------------------------------------------------
@@ -3815,11 +3960,30 @@ FORCEINLINE void CMeshBuilder::FastIndex( unsigned short idx )
 	m_IndexBuilder.FastIndex( idx );
 }
 
+FORCEINLINE void CMeshBuilder::FastIndex( int nIndexOffset, unsigned short index )
+{
+	m_IndexBuilder.FastIndex( nIndexOffset, index );
+}
 // NOTE: Use this one to get write combining! Much faster than the other version of FastIndex
 // Fast Index! No need to call advance index, and no random access allowed
 FORCEINLINE void CMeshBuilder::FastIndex2( unsigned short nIndex1, unsigned short nIndex2 )
 {
 	m_IndexBuilder.FastIndex2( nIndex1, nIndex2 );
+}
+
+FORCEINLINE void CMeshBuilder::FastIndex2( int nIndexOffset, unsigned short nIndex1, unsigned short nIndex2 )
+{
+	m_IndexBuilder.FastIndex2( nIndexOffset, nIndex1, nIndex2 );
+}
+
+FORCEINLINE void CMeshBuilder::FastQuad( int nIndex )
+{
+	m_IndexBuilder.FastQuad( nIndex );
+}
+
+FORCEINLINE void CMeshBuilder::FastQuad( int nIndexOffset, int nIndex )
+{
+	m_IndexBuilder.FastQuad( nIndexOffset, nIndex );
 }
 
 //-----------------------------------------------------------------------------
@@ -3877,6 +4041,15 @@ inline void CMeshBuilder::VertexDX8ToX360( const ModelVertexDX8_t &vertex )
 FORCEINLINE void CMeshBuilder::Position3f( float x, float y, float z )
 {
 	m_VertexBuilder.Position3f( x, y, z );
+}
+
+FORCEINLINE void CMeshBuilder::Position3f( int nVertexOffset, float x, float y, float z )
+{
+	m_VertexBuilder.Position3f( nVertexOffset, x, y, z );
+}
+FORCEINLINE void CMeshBuilder::Position3f( const fltx4 &f4Position )
+{
+	m_VertexBuilder.Position3f( f4Position );
 }
 
 FORCEINLINE void CMeshBuilder::Position3fv( const float *v )
@@ -3937,6 +4110,11 @@ FORCEINLINE void CMeshBuilder::Color3ubv( unsigned char const* rgb )
 FORCEINLINE void CMeshBuilder::Color4ub( unsigned char r, unsigned char g, unsigned char b, unsigned char a )
 {
 	m_VertexBuilder.Color4ub( r, g, b, a );
+}
+
+FORCEINLINE void CMeshBuilder::Color4ub( int nVertexOffset, unsigned char r, unsigned char g, unsigned char b, unsigned char a )
+{
+	m_VertexBuilder.Color4ub( nVertexOffset, r, g, b, a );
 }
 
 FORCEINLINE void CMeshBuilder::Color4ubv( unsigned char const* rgba )
@@ -4019,6 +4197,11 @@ FORCEINLINE void CMeshBuilder::TexCoord4fv( int nStage, const float *stuv )
 	m_VertexBuilder.TexCoord4fv( nStage, stuv );
 }
 
+
+FORCEINLINE void CMeshBuilder::TexCoord4fv( int nVertexOffset, int nStage, const float *stuv )
+{
+	m_VertexBuilder.TexCoord4fv( nVertexOffset, nStage, stuv );
+}
 FORCEINLINE void CMeshBuilder::TexCoordSubRect2f( int nStage, float s, float t, float offsetS, float offsetT, float scaleS, float scaleT )
 {
 	m_VertexBuilder.TexCoordSubRect2f( nStage, s, t, offsetS, offsetT, scaleS, scaleT );

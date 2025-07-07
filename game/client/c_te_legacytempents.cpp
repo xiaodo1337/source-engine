@@ -1097,7 +1097,7 @@ void CTempEnts::BreakModel( const Vector &pos, const QAngle &angles, const Vecto
 	}
 }
 
-void CTempEnts::PhysicsProp( int modelindex, int skin, const Vector& pos, const QAngle &angles, const Vector& vel, int flags, int effects )
+void CTempEnts::PhysicsProp( int modelindex, int skin, const Vector& pos, const QAngle &angles, const Vector& vel, int flags, int effects, color24 renderColor )
 {
 	C_PhysPropClientside *pEntity = C_PhysPropClientside::CreateNew();
 	
@@ -1118,6 +1118,27 @@ void CTempEnts::PhysicsProp( int modelindex, int skin, const Vector& pos, const 
 	pEntity->SetAbsAngles( angles );
 	pEntity->SetPhysicsMode( PHYSICS_MULTIPLAYER_CLIENTSIDE );
 	pEntity->SetEffects( effects );
+	pEntity->SetRenderColor( renderColor.r, renderColor.g, renderColor.b );
+
+	if ( flags & 1 )
+	{
+		// We are not calling initialize on this entity here, so we need to manually set some of the required values otherwise set in initialize.
+		pEntity->SetModelIndex( modelindex );
+		pEntity->SetCollisionGroup( COLLISION_GROUP_PUSHAWAY );
+		pEntity->SetAbsVelocity( vel );
+		const model_t *mod = pEntity->GetModel();
+		if ( mod )
+		{
+			Vector mins, maxs;
+			modelinfo->GetModelBounds( mod, mins, maxs );
+			pEntity->SetCollisionBounds( mins, maxs );
+		}
+
+		pEntity->Spawn();
+		pEntity->SetHealth( 0 );
+		pEntity->Break();
+		return;
+	}
 
 	if ( !pEntity->Initialize() )
 	{
@@ -1142,6 +1163,11 @@ void CTempEnts::PhysicsProp( int modelindex, int skin, const Vector& pos, const 
 	{
 		pEntity->SetHealth( 0 );
 		pEntity->Break();
+	}
+	else if ( flags & 2 )
+	{
+		int numBodygroups = pEntity->GetBodygroupCount( 0 );
+		pEntity->SetBodygroup( 0, RandomInt( 0, numBodygroups - 1 ) );
 	}
 }
 
@@ -2213,7 +2239,7 @@ void CTempEnts::PlaySound ( C_LocalTempEntity *pTemp, float damp )
 #endif
 	}
 
-	zvel = abs( pTemp->GetVelocity()[2] );
+	zvel = fabs( pTemp->GetVelocity()[2] );
 		
 	// only play one out of every n
 
@@ -2941,7 +2967,6 @@ void CTempEnts::MuzzleFlash_Shotgun_NPC( ClientEntityHandle_t hEntity, int attac
 	QAngle	angles;
 
 	Vector	forward;
-	int		i;
 
 	// Setup the origin.
 	Vector	origin;
@@ -3008,7 +3033,7 @@ void CTempEnts::MuzzleFlash_Shotgun_NPC( ClientEntityHandle_t hEntity, int attac
 
 	int	numEmbers = random->RandomInt( 4, 8 );
 
-	for ( i = 0; i < numEmbers; i++ )
+	for ( int i = 0; i < numEmbers; i++ )
 	{
 		pTrailParticle = (TrailParticle *) pTrails->AddParticle( sizeof( TrailParticle ), g_Mat_SMG_Muzzleflash[0], origin );
 			

@@ -193,9 +193,6 @@ def define_platform(conf):
 		conf.options.SDL = False
 		conf.define('DEDICATED', 1)
 
-	if conf.options.TESTS:
-		conf.define('UNITTESTS', 1)
-
 	if conf.env.GL:
 		conf.env.append_unique('DEFINES', [
 			'DX_TO_GL_ABSTRACTION',
@@ -280,6 +277,7 @@ def define_platform(conf):
 		])
 
 	conf.define('GIT_COMMIT_HASH', conf.env.GIT_VERSION)
+	conf.define('VALVE_LITTLE_ENDIAN', 1)
 
 
 def options(opt):
@@ -546,7 +544,8 @@ def configure(conf):
 			'/Zc:wchar_t',
 			'/GR',
 			'/TP',
-			'/EHsc'
+			'/EHsc',
+			'/utf-8',
 		]
 
 		if conf.options.BUILD_TYPE == 'debug':
@@ -587,16 +586,11 @@ def configure(conf):
 		elif conf.env.DEST_CPU in ['x86_64', 'amd64']:
 			conf.define('COMPILER_MSVC64', 1)
 
-	if conf.env.COMPILER_CC != 'msvc':
-		conf.check_cc(cflags=cflags, linkflags=linkflags, msg='Checking for required C flags')
-		conf.check_cxx(cxxflags=cxxflags, linkflags=linkflags, msg='Checking for required C++ flags')
-
-		conf.env.append_unique('CFLAGS', cflags)
-		conf.env.append_unique('CXXFLAGS', cxxflags)
-		conf.env.append_unique('LINKFLAGS', linkflags)
-
-		cxxflags += conf.filter_cxxflags(compiler_optional_flags, cflags)
-		cflags += conf.filter_cflags(compiler_optional_flags + c_compiler_optional_flags, cflags)
+	conf.check_cc(cflags=cflags, linkflags=linkflags, msg='Checking for required C flags')
+	conf.check_cxx(cxxflags=cxxflags, linkflags=linkflags, msg='Checking for required C++ flags')
+ 
+	cflags += conf.filter_cflags(compiler_optional_flags + c_compiler_optional_flags, cflags)
+	cxxflags += conf.filter_cxxflags(compiler_optional_flags, cflags)
 
 	conf.env.append_unique('CFLAGS', cflags)
 	conf.env.append_unique('CXXFLAGS', cxxflags)

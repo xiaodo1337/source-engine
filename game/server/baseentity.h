@@ -798,6 +798,7 @@ public:
 	// was pev->rendercolor
 	CNetworkColor32( m_clrRender );
 	const color32 GetRenderColor() const;
+	const color24 GetRenderColor24() const;
 	void SetRenderColor( byte r, byte g, byte b );
 	void SetRenderColor( byte r, byte g, byte b, byte a );
 	void SetRenderColorR( byte r );
@@ -1454,6 +1455,7 @@ public:
 	inline IPhysicsObject *VPhysicsGetObject( void ) const { return m_pPhysicsObject; }
 	virtual void	VPhysicsUpdate( IPhysicsObject *pPhysics );
 	void			VPhysicsUpdatePusher( IPhysicsObject *pPhysics );
+	float			VPhysicsGetNonShadowMass( void ) const { return m_flNonShadowMass; }
 	
 	// react physically to damage (called from CBaseEntity::OnTakeDamage() by default)
 	virtual int		VPhysicsTakeDamage( const CTakeDamageInfo &info );
@@ -1666,6 +1668,7 @@ private:
 
 	CNetworkVar( int, m_CollisionGroup );		// used to cull collision tests
 	IPhysicsObject	*m_pPhysicsObject;	// pointer to the entity's physics object (vphysics.dll)
+	float m_flNonShadowMass;	// cached mass (shadow controllers set mass to VPHYSICS_MAX_MASS, or 50000)
 
 	CNetworkVar( float, m_flShadowCastDistance );
 	float		m_flDesiredShadowCastDistance;
@@ -2344,6 +2347,12 @@ inline void CBaseEntity::SetWaterLevel( int nLevel )
 inline const color32 CBaseEntity::GetRenderColor() const
 {
 	return m_clrRender.Get();
+}
+
+inline const color24 CBaseEntity::GetRenderColor24() const
+{
+	color24 c = { m_clrRender->r, m_clrRender->g, m_clrRender->b };
+	return c;
 }
 
 inline void CBaseEntity::SetRenderColor( byte r, byte g, byte b )

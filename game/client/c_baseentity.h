@@ -445,6 +445,7 @@ public:
 	inline IPhysicsObject			*VPhysicsGetObject( void ) const { return m_pPhysicsObject; }
 	virtual int						VPhysicsGetObjectList( IPhysicsObject **pList, int listMax );
 	virtual bool					VPhysicsIsFlesh( void );
+	float							VPhysicsGetNonShadowMass( void ) const { return m_flNonShadowMass; }
 
 // IClientEntity implementation.
 public:
@@ -701,6 +702,7 @@ public:
 	// Initialize things given a new model.
 	virtual CStudioHdr				*OnNewModel();
 	virtual void					OnNewParticleEffect( const char *pszParticleName, CNewParticleEffect *pNewParticleEffect );
+	virtual void					OnParticleEffectDeleted( CNewParticleEffect *pParticleEffect );
 
 	bool							IsSimulatedEveryTick() const;
 	bool							IsAnimatedEveryTick() const;
@@ -1401,6 +1403,7 @@ private:
 protected:
 	// pointer to the entity's physics object (vphysics.dll)
 	IPhysicsObject					*m_pPhysicsObject;	
+	float							m_flNonShadowMass;	// cached mass (shadow controllers set mass to VPHYSICS_MAX_MASS, or 50000)
 
 #if !defined( NO_ENTITY_PREDICTION )
 	bool							m_bPredictionEligible;

@@ -13,6 +13,7 @@
 #include "tier0/commonmacros.h"
 #include "mathlib/vector.h"
 #include "mathlib/vector2d.h"
+#include "mathlib/math_pfns.h"
 #include "tier0/dbg.h"
 
 #include "mathlib/math_pfns.h"
@@ -234,6 +235,22 @@ struct matrix3x4_t
 		Init( xAxis, yAxis, zAxis, vecOrigin );
 	}
 
+
+	/// modify the origin
+	inline void SetOrigin( Vector const & p )
+	{
+		m_flMatVal[0][3] = p.x;
+		m_flMatVal[1][3] = p.y;
+		m_flMatVal[2][3] = p.z;
+	}
+
+	/// return the origin
+	inline Vector GetOrigin( void ) const
+	{
+		Vector vecRet( m_flMatVal[0][3], m_flMatVal[1][3], m_flMatVal[2][3] );
+		return vecRet;
+	}
+
 	inline void Invalidate( void )
 	{
 		for( int i=0; i < 12; i++ )
@@ -241,6 +258,16 @@ struct matrix3x4_t
 			((float*)m_flMatVal)[i] = VEC_T_NAN;
 		}
 	}
+
+
+	inline Vector TransformVector( const Vector &v0 ) const;
+	inline void InverseTR( matrix3x4_t &out ) const;
+	inline matrix3x4_t InverseTR() const;
+
+	inline Vector GetColumn( MatrixAxisType_t nColumn ) const;
+	inline Vector GetForward() const { return GetColumn( FORWARD_AXIS ); }
+	inline Vector GetLeft() const { return GetColumn( LEFT_AXIS ); }
+	inline Vector GetUp() const { return GetColumn( UP_AXIS ); }
 
 	inline float *operator[]( int i )				{ Assert(( i >= 0 ) && ( i < 3 )); return m_flMatVal[i]; }
 	inline const float *operator[]( int i ) const	{ Assert(( i >= 0 ) && ( i < 3 )); return m_flMatVal[i]; }
@@ -552,6 +579,7 @@ void MatrixScaleByZero ( matrix3x4_t &out );
 //void DecomposeRotation( const matrix3x4_t &mat, float *out );
 void ConcatRotations (const matrix3x4_t &in1, const matrix3x4_t &in2, matrix3x4_t &out);
 void ConcatTransforms (const matrix3x4_t &in1, const matrix3x4_t &in2, matrix3x4_t &out);
+const matrix3x4_t ConcatTransforms( const matrix3x4_t &in1, const matrix3x4_t &in2 );
 
 // For identical interface w/ VMatrix
 inline void MatrixMultiply ( const matrix3x4_t &in1, const matrix3x4_t &in2, matrix3x4_t &out )
@@ -800,7 +828,6 @@ void VectorMatrix( const Vector &forward, matrix3x4_t &mat );
 void VectorVectors( const Vector &forward, Vector &right, Vector &up );
 void SetIdentityMatrix( matrix3x4_t &mat );
 void SetScaleMatrix( float x, float y, float z, matrix3x4_t &dst );
-void MatrixBuildRotationAboutAxis( const Vector &vAxisOfRot, float angleDegrees, matrix3x4_t &dst );
 
 inline void SetScaleMatrix( float flScale, matrix3x4_t &dst )
 {
@@ -867,6 +894,15 @@ inline int VectorCompare (const Vector& v1, const Vector& v2)
 inline void VectorTransform (const Vector& in1, const matrix3x4_t &in2, Vector &out)
 {
 	VectorTransform( &in1.x, in2, &out.x );
+}
+
+// MSVC folds the return value nicely and creates no temporaries on the stack,
+// we need more experiments with different compilers and in different circumstances
+inline const Vector VectorTransform( const Vector& in1, const matrix3x4_t &in2 )
+{
+	Vector out;
+	VectorTransform( in1, in2, out );
+	return out;
 }
 
 inline void VectorITransform (const Vector& in1, const matrix3x4_t &in2, Vector &out)
@@ -1773,11 +1809,40 @@ bool MathLib_MMXEnabled( void );
 bool MathLib_SSEEnabled( void );
 bool MathLib_SSE2Enabled( void );
 
+Vector Approach( Vector target, Vector value, float speed );
 float Approach( float target, float value, float speed );
 float ApproachAngle( float target, float value, float speed );
 float AngleDiff( float destAngle, float srcAngle );
 float AngleDistance( float next, float cur );
 float AngleNormalize( float angle );
+
+// return a 0..1 value based on the position of x between edge0 and edge1
+inline float smoothstep_bounds( float edge0, float edge1, float x )
+{
+	x = clamp( (x - edge0) / (edge1 - edge0), 0, 1 );
+	return x*x*(3 - 2 * x);
+}
+inline Vector matrix3x4_t::TransformVector( const Vector &v0 ) const
+{
+	return VectorTransform( v0, *this );
+}
+
+inline Vector matrix3x4_t::GetColumn( MatrixAxisType_t nColumn ) const
+{
+	return Vector( m_flMatVal[ 0 ][ nColumn ], m_flMatVal[ 1 ][ nColumn ], m_flMatVal[ 2 ][ nColumn ] );
+}
+
+inline void matrix3x4_t::InverseTR( matrix3x4_t &out ) const
+{
+	::MatrixInvert( *this, out );
+}
+
+inline matrix3x4_t matrix3x4_t::InverseTR() const
+{
+	matrix3x4_t out;
+	::MatrixInvert( *this, out );
+	return out;
+}
 
 // ensure that 0 <= angle <= 360
 float AngleNormalizePositive( float angle );

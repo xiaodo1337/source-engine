@@ -142,7 +142,7 @@ void CBaseGrenade::Explode( trace_t *pTrace, int bitsDamageType )
 		CPASFilter filter( vecAbsOrigin );
 
 		te->Explosion( filter, -1.0, // don't apply cl_interp delay
-			&vecAbsOrigin,
+			vecAbsOrigin,
 			!( contents & MASK_WATER ) ? g_sModelIndexFireball : g_sModelIndexWExplosion,
 			m_DmgRadius * .03, 
 			25,
@@ -156,7 +156,7 @@ void CBaseGrenade::Explode( trace_t *pTrace, int bitsDamageType )
 	{
 		CPASFilter filter( vecAbsOrigin );
 		te->Explosion( filter, -1.0, // don't apply cl_interp delay
-			&vecAbsOrigin, 
+			vecAbsOrigin, 
 			!( contents & MASK_WATER ) ? g_sModelIndexFireball : g_sModelIndexWExplosion,
 			m_DmgRadius * .03, 
 			25,

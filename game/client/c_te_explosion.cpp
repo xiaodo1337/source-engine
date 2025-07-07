@@ -292,16 +292,16 @@ void C_TEExplosion::SimulateParticles( CParticleSimulateIterator *pIterator )
 
 
 void TE_Explosion( IRecipientFilter& filter, float delay,
-	const Vector* pos, int modelindex, float scale, int framerate, int flags, int radius, int magnitude, 
-	const Vector* normal = NULL, unsigned char materialType = 'C', bool bShouldAffectRagdolls = true )
+	const Vector& pos, int modelindex, float scale, int framerate, int flags, int radius, int magnitude, 
+	const Vector& normal, unsigned char materialType = 'C', bool bShouldAffectRagdolls = true )
 {
 	// Major hack to access singleton object for doing this event (simulate receiving network message)
 	__g_C_TEExplosion.m_nModelIndex = modelindex;
 	__g_C_TEExplosion.m_fScale = scale;
 	__g_C_TEExplosion.m_nFrameRate = framerate;
 	__g_C_TEExplosion.m_nFlags = flags;
-	__g_C_TEExplosion.m_vecOrigin = *pos;
-	__g_C_TEExplosion.m_vecNormal = *normal;
+	__g_C_TEExplosion.m_vecOrigin = pos;
+	__g_C_TEExplosion.m_vecNormal = normal;
 	__g_C_TEExplosion.m_chMaterialType = materialType;
 	__g_C_TEExplosion.m_nRadius = radius;
 	__g_C_TEExplosion.m_nMagnitude = magnitude;
@@ -328,6 +328,6 @@ void TE_Explosion( IRecipientFilter& filter, float delay, KeyValues *pKeyValues 
 	int nMaterialType = pKeyValues->GetInt( "materialtype" );
 	int nRadius = pKeyValues->GetInt( "radius" );
 	int nMagnitude = pKeyValues->GetInt( "magnitude" );
-	TE_Explosion( filter, 0.0f, &vecOrigin, nModelIndex, flScale, nFrameRate,
-		nFlags, nRadius, nMagnitude, &vecNormal, (unsigned char)nMaterialType, false );
+	TE_Explosion( filter, 0.0f, vecOrigin, nModelIndex, flScale, nFrameRate,
+		nFlags, nRadius, nMagnitude, vecNormal, (unsigned char)nMaterialType, false );
 }
